@@ -67,7 +67,9 @@ func log(msg ...interface{}) {
 	logFileExt := filepath.Ext(logFile)
 	logFileBaseName := strings.TrimSuffix(logFile, logFileExt)
 	logFilePath := logFileBaseName + "-" + time.Now().Format("2006-01-02") + logFileExt
-	ioutil.WriteFile(logFilePath, []byte(fmt.Sprintln(m...)), 0755)
+	f, _ := os.OpenFile(logFilePath, os.O_RDWR|os.O_APPEND, 0644)
+	defer f.Close()
+	f.WriteString(fmt.Sprintln(m...))
 }
 
 func connDatabase() (*sql.DB, error) {
