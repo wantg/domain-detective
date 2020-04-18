@@ -7,16 +7,18 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const dbName = "./domains.db"
-
 var avaliableChars []rune
 
+const dbName = "./domains.db"
 const detectURL = "https://checkapi.aliyun.com/check/checkdomain?domain=%s.%s&command=&token=Y"
+const logFile = "./runtime.log"
 
 func init() {
 	for i := '0'; i <= '9'; i++ {
@@ -62,7 +64,10 @@ func getDomainList(size int) [][]rune {
 func log(msg ...interface{}) {
 	m := []interface{}{time.Now().Format("[2006-01-02 15:04:05]")}
 	m = append(m, msg...)
-	fmt.Println(m...)
+	logFileExt := filepath.Ext(logFile)
+	logFileBaseName := strings.TrimSuffix(logFile, logFileExt)
+	logFilePath := logFileBaseName + "-" + time.Now().Format("2006-01-02") + logFileExt
+	ioutil.WriteFile(logFilePath, []byte(fmt.Sprintln(m...)), 0755)
 }
 
 func connDatabase() (*sql.DB, error) {
@@ -135,7 +140,7 @@ func main() {
 	event := os.Args[1]
 	if event == "prepare" {
 		minLen := 2
-		maxLen := 3
+		maxLen := 5
 		initDatatable()
 		for i := minLen; i <= maxLen; i++ {
 			prepareMaterials(getDomainList(i))
