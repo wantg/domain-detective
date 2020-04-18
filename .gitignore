@@ -1,4 +1,5 @@
 go.sum
+*.sql
 *.db
 *.db-journal
 *.log

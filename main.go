@@ -112,6 +112,7 @@ func initDatatable() {
 			created_at DATE,
 			updated_at DATE NULL
 		)`)
+	runPrepareExec(db, `CREATE INDEX domains_idx_status ON domains(status);`)
 }
 
 func prepareMaterials(ra [][]rune) {
@@ -136,28 +137,42 @@ func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("what u want? send command line arg to me")
 		fmt.Println("prepare: recreate database and prepare domains to detect")
-		fmt.Println("redetect: redo all detect")
+		fmt.Println("detect: detect with aliyun")
 		return
 	}
 	event := os.Args[1]
 	if event == "prepare" {
+		initDatatable()
 		minLen := 2
 		maxLen := 5
-		initDatatable()
 		for i := minLen; i <= maxLen; i++ {
-			prepareMaterials(getDomainList(i))
+			sqlFile := fmt.Sprintf("c-%d.sql", i)
+			os.Remove(sqlFile)
+			ra := getDomainList(i)
+			f, _ := os.OpenFile(sqlFile, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
+			for idx, s := range ra {
+				if idx%100000 == 0 {
+					log(i, string(s))
+				}
+				f.WriteString(fmt.Sprintf(
+					"INSERT INTO domains(name, len, suffix, created_at) values('%s',%d,'%s','%s');\n",
+					string(s), len(s), "com", time.Now().Format("2006-01-02 15:04:05"),
+				))
+			}
+			f.Close()
 		}
-	} else if event == "redetect" {
+	} else if event == "detect" {
 		page := 1
 		pageLen := 100
 		for {
 			db, err := connDatabase()
 			if err != nil {
-				return
+				break
 			}
-			rows, err := db.Query("SELECT id, name, suffix FROM domains ORDER BY id LIMIT ? OFFSET ?", pageLen, (page-1)*pageLen)
+			rows, err := db.Query("SELECT id, name, suffix FROM domains WHERE result is null ORDER BY id LIMIT ? OFFSET ?", pageLen, (page-1)*pageLen)
 			if err != nil {
 				log(err)
+				break
 			}
 			type domainInfo struct {
 				id     int
