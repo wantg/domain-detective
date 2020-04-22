@@ -229,7 +229,7 @@ func main() {
 			db.Close()
 			count := len(domainInfos)
 			if count > 0 {
-				log(fmt.Sprintf("%d, %s - %d, %s/n",
+				log(fmt.Sprintf("%d, %s - %d, %s",
 					domainInfos[0].id, domainInfos[0].name, domainInfos[count-1].id, domainInfos[count-1].name))
 			}
 			log(count)
