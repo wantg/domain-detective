@@ -191,6 +191,7 @@ func main() {
 			}
 			rows.Close()
 			for _, di := range domainInfos {
+				time.Sleep(time.Millisecond * 50)
 				url := fmt.Sprintf(detectURL, di.name, di.suffix)
 				resp, err := http.Get(url)
 				if err != nil {
