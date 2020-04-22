@@ -17,7 +17,7 @@ import (
 var avaliableChars []rune
 
 const dbName = "./domains.db"
-const detectURL = "https://checkapi.aliyun.com/check/checkdomain?domain=%s.%s&command=&token=Y"
+const detectURL = "https://checkapi.aliyun.com/check/checkdomain?domain=%s.%s&command=&token=443a45a91460cb8e2fa6eff488de7017"
 const logFile = "./runtime.log"
 
 func init() {
@@ -191,7 +191,7 @@ func main() {
 			}
 			rows.Close()
 			for _, di := range domainInfos {
-				time.Sleep(time.Millisecond * 50)
+				time.Sleep(time.Millisecond * 10)
 				url := fmt.Sprintf(detectURL, di.name, di.suffix)
 				resp, err := http.Get(url)
 				if err != nil {
@@ -229,7 +229,8 @@ func main() {
 			db.Close()
 			count := len(domainInfos)
 			if count > 0 {
-				log(domainInfos[0].name + " - " + domainInfos[count-1].name)
+				log(fmt.Sprintf("%d, %s - %d, %s/n",
+					domainInfos[0].id, domainInfos[0].name, domainInfos[count-1].id, domainInfos[count-1].name))
 			}
 			log(count)
 			if count < pageLen {
