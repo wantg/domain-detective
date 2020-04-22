@@ -169,7 +169,7 @@ func main() {
 			if err != nil {
 				break
 			}
-			rows, err := db.Query("SELECT id, name, suffix FROM domains WHERE result is null ORDER BY id LIMIT ? OFFSET ?", pageLen, (page-1)*pageLen)
+			rows, err := db.Query("SELECT id, name, suffix FROM domains WHERE status is null ORDER BY id LIMIT ? OFFSET ?", pageLen, (page-1)*pageLen)
 			if err != nil {
 				log(err)
 				break
@@ -180,9 +180,7 @@ func main() {
 				suffix string
 			}
 			domainInfos := []domainInfo{}
-			count := 0
 			for rows.Next() {
-				count++
 				di := domainInfo{}
 				err := rows.Scan(&di.id, &di.name, &di.suffix)
 				if err != nil {
@@ -226,6 +224,10 @@ func main() {
 				if err != nil {
 					log(err)
 				}
+			}
+			count := len(domainInfos)
+			if count > 0 {
+				log(domainInfos[0].name + " - " + domainInfos[count-1].name)
 			}
 			log(count)
 			db.Close()
