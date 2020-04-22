@@ -225,16 +225,16 @@ func main() {
 					log(err)
 				}
 			}
+			db.Close()
 			count := len(domainInfos)
 			if count > 0 {
 				log(domainInfos[0].name + " - " + domainInfos[count-1].name)
 			}
 			log(count)
-			db.Close()
-			page++
 			if count < pageLen {
 				break
 			}
+			page++
 		}
 	}
 }
