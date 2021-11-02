@@ -17,7 +17,7 @@ import (
 var avaliableChars []rune
 
 const dbName = "./domains.db"
-const detectURL = "https://checkapi.aliyun.com/check/checkdomain?domain=%s.%s&command=&token=443a45a91460cb8e2fa6eff488de7017"
+const detectURL = "https://checkapi.aliyun.com/check/checkdomain?domain=%s.%s&command=&token=4z3a254914a0cb8e2fg6effv83de7017"
 const logFile = "./runtime.log"
 
 func init() {
@@ -70,6 +70,7 @@ func log(msg ...interface{}) {
 	f, _ := os.OpenFile(logFilePath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 	defer f.Close()
 	f.WriteString(fmt.Sprintln(m...))
+	fmt.Println(m...)
 }
 
 func connDatabase() (*sql.DB, error) {
@@ -138,6 +139,7 @@ func main() {
 		fmt.Println("what u want? send command line arg to me")
 		fmt.Println("prepare: recreate database and prepare domains to detect")
 		fmt.Println("detect: detect with aliyun")
+		fmt.Println("read: show valuable domains")
 		return
 	}
 	event := os.Args[1]
@@ -183,6 +185,7 @@ func main() {
 			for rows.Next() {
 				di := domainInfo{}
 				err := rows.Scan(&di.id, &di.name, &di.suffix)
+				log(di)
 				if err != nil {
 					log(err)
 					continue
@@ -191,7 +194,7 @@ func main() {
 			}
 			rows.Close()
 			for _, di := range domainInfos {
-				time.Sleep(time.Millisecond * 10)
+				time.Sleep(time.Millisecond * 50)
 				url := fmt.Sprintf(detectURL, di.name, di.suffix)
 				resp, err := http.Get(url)
 				if err != nil {
@@ -215,6 +218,7 @@ func main() {
 				}
 				dr := detectResult{}
 				json.Unmarshal(bts, &dr)
+				log(string(bts))
 				sql := "UPDATE domains set result = ?, updated_at = ? where id = ?"
 				args := []interface{}{string(bts), time.Now(), di.id}
 				if len(dr.Module) > 0 {
@@ -234,6 +238,53 @@ func main() {
 			}
 			log(count)
 			if count < pageLen {
+				break
+			}
+			// page++
+		}
+	} else if event == "read" {
+		csvFile := "./domains.csv"
+		os.Remove(csvFile)
+		page := 1
+		pageLen := 2000
+		for {
+			db, err := connDatabase()
+			if err != nil {
+				fmt.Println(err)
+				break
+			}
+			sql := fmt.Sprintf("SELECT id,name,suffix,status FROM domains where status != 0 ORDER BY id LIMIT %d OFFSET %d", pageLen, (page-1)*pageLen)
+			rows, err := db.Query(sql)
+			if err != nil {
+				fmt.Println(err)
+				break
+			}
+			type domainInfo struct {
+				id     int
+				name   string
+				suffix string
+				status int
+			}
+			domainInfos := []domainInfo{}
+			for rows.Next() {
+				di := domainInfo{}
+				err := rows.Scan(&di.id, &di.name, &di.suffix, &di.status)
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
+				domainInfos = append(domainInfos, di)
+			}
+			rows.Close()
+			db.Close()
+			f, _ := os.OpenFile(csvFile, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
+			for _, di := range domainInfos {
+				f.WriteString(fmt.Sprintf("%d, %s.%s, status is %d\n", di.id, di.name, di.suffix, di.status))
+			}
+			f.Close()
+			fmt.Println(sql)
+			fmt.Println(page*pageLen, len(domainInfos), domainInfos[0].id)
+			if len(domainInfos) < pageLen {
 				break
 			}
 			page++

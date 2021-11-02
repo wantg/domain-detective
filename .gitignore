@@ -1,5 +1,10 @@
 go.sum
 *.sql
 *.db
+*.db.zip
 *.db-journal
 *.log
+domains.csv
+domains-prepared.db.zip
+domain-detective
+.DS_Store
